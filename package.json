@@ -1,0 +1,58 @@
+{
+  "version": "0.1.0",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "engines": {
+    "node": ">=10"
+  },
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "node ./test/test.js",
+    "lint": "tsdx lint",
+    "prepare": "tsdx build",
+    "size": "size-limit",
+    "analyze": "size-limit --why"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "tsdx lint"
+    }
+  },
+  "prettier": {
+    "printWidth": 80,
+    "semi": true,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "name": "nostr-reqres",
+  "author": "Giovanni Bruno",
+  "module": "dist/nostr-reqres.esm.js",
+  "size-limit": [
+    {
+      "path": "dist/nostr-reqres.cjs.production.min.js",
+      "limit": "10 KB"
+    },
+    {
+      "path": "dist/nostr-reqres.esm.js",
+      "limit": "10 KB"
+    }
+  ],
+  "devDependencies": {
+    "@size-limit/preset-small-lib": "^8.1.2",
+    "husky": "^8.0.3",
+    "size-limit": "^8.1.2",
+    "tsdx": "^0.14.1",
+    "tslib": "^2.5.0",
+    "typescript": "^3.9.10",
+    "websocket-polyfill": "^0.0.3"
+  },
+  "dependencies": {
+    "nostr-tools": "^1.2.1"
+  }
+}
