@@ -1,0 +1,3 @@
+export const MAX_BYTES_PER_CHUNK = 16384
+export const MIN_BYTES_PER_CHUNK = 1000
+export const DEFAULT_TIMEOUT = 60000
