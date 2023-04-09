@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
@@ -58,7 +58,7 @@
     "nostr-tools": "^1.7.5",
     "websocket-polyfill": "^0.0.3"
   },
-  "tag": [
+  "keywords": [
     "nostr",
     "request",
     "response"
