@@ -5,7 +5,7 @@ The NostrReqRes library is a JavaScript library that provides an easy way to cre
 ## Installation
 
 ``` bash
-npm install nostr-reqres
+npm install @nostr-connect/nostr-reqres
 ```
 
 ## Examples
