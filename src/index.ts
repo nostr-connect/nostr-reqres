@@ -1,7 +1,7 @@
-if (typeof window === "undefined") { 
-  globalThis.crypto = require("crypto")
-  require("websocket-polyfill")
-}
+// if (typeof window === "undefined") { 
+//   globalThis.crypto = require("crypto")
+//   ;(global as any).WebSocket = require("ws")
+// }
 
 import type { Req } from "./Req"
 import type { NostrReqRes } from "./NostrReqRes"
@@ -26,7 +26,7 @@ export type ReqResParams = {
   data?: string
   sender?: string
   receiver?: string
-  secretKey?: string
+  secretKey?: Uint8Array
   maxBytesPerChunk?: number
   ttl?: number
   req?: Req

@@ -1,7 +1,12 @@
 import "@inrupt/jest-jsdom-polyfills"
 import crypto from "crypto"
+import { useWebSocketImplementation } from "nostr-tools/pool"
+import WebSocket from "ws"
+useWebSocketImplementation(WebSocket)
+
 import { NostrReqRes } from "../src/index"
-import { generatePrivateKey } from "nostr-tools"
+import { generateSecretKey } from "nostr-tools"
+import { ExtendedError } from "../src/ExtendedError"
 
 Object.defineProperty(global, "crypto", {
   value: {
@@ -16,8 +21,8 @@ Object.defineProperty(global, "crypto", {
 const relayUrl = "wss://nostr-pub.wellorder.net"
 
 const getClients = async (): Promise<{ sender: NostrReqRes, receiver: NostrReqRes }> => {
-  const senderSk = generatePrivateKey()
-  const receiverSk = generatePrivateKey()
+  const senderSk = generateSecretKey()
+  const receiverSk = generateSecretKey()
   const nostrReqResSENDER = await new NostrReqRes({ secretKey: senderSk, waitForRealyAckWhenSendingChunks: false }).connect(relayUrl)
   nostrReqResSENDER.onError(err => { throw err })
   const nostrReqResRECEIVER = await new NostrReqRes({ secretKey: receiverSk, }).connect(relayUrl)
@@ -90,8 +95,12 @@ describe("req-res tests", () => {
         req.createRes({ data: "Pong" })
         throw new Error("Should have thrown")
       } catch (err) {
-        expect(err.code).toBe("TIMED_OUT")
-        ok()
+        if (err instanceof ExtendedError) {
+          expect(err.code).toBe("TIMED_OUT")
+          ok()
+        } else  { 
+          throw err
+        }
       }
     })
 
@@ -109,8 +118,12 @@ describe("req-res tests", () => {
       await req.send()
       throw new Error("Should have thrown")
     } catch (err) {
-      expect(err.code).toBe("TIMED_OUT")
-      ok()
+      if (err instanceof ExtendedError) {
+        expect(err.code).toBe("TIMED_OUT")
+        ok()
+      } else  {
+        throw err
+      }
     }
   })
 })
