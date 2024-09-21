@@ -1,5 +1,10 @@
 import type { Req } from "./Req"
 import type { NostrReqRes } from "./NostrReqRes"
+import type { ReqRes } from "./ReqRes"
+import type { Res } from "./Res"
+import type { ExtendedError } from "./ExtendedError"
+
+export type { Req, ReqRes, Res, ExtendedError }
 
 export type CreateReqParams = {
   receiver: string,
