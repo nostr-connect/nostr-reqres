@@ -2,10 +2,10 @@
   "name": "@nostr-connect/nostr-reqres",
   "description": "A JavaScript library for managing request/response communication over Nostr protocol",
   "author": "Giovanni Bruno",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "main": "dist/index.cjs.js",
-  "module": "dist/index.mjs.js",
+  "module": "dist/index.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist",
