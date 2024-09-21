@@ -1,7 +1,7 @@
 import type { FirstChunk, Chunk, CreateReqParams } from "."
-import { Event, Relay, Sub, relayInit } from "nostr-tools"
+import { Event, Relay } from "nostr-tools"
 import EventEmitter from "events"
-import { nip04, generatePrivateKey, getPublicKey, verifySignature } from "nostr-tools"
+import { nip04, generateSecretKey, getPublicKey, verifyEvent } from "nostr-tools"
 import { validateEnvelope, validateMaxBytesPerChunk } from "./utils"
 import { MAX_BYTES_PER_CHUNK, MIN_BYTES_PER_CHUNK, DEFAULT_TIMEOUT } from "./constants"
 import { ExtendedError } from "./ExtendedError"
@@ -16,8 +16,8 @@ export class NostrReqRes {
 
   readonly pendingRequests: Map<string, Req> = new Map()
 
-  private _secretKey: string
-  get secretKey(): string { return this._secretKey }
+  private _secretKey: Uint8Array
+  get secretKey(): Uint8Array { return this._secretKey }
   
   private _pubkey: string
   get pubkey(): string { return this._pubkey }
@@ -29,8 +29,8 @@ export class NostrReqRes {
   private _relay: Relay | null = null
   get relay(): Relay | null { return this._relay }
 
-  private _sub: Sub | null = null
-  get sub(): Sub | null { return this._sub }
+  // private _sub: Sub | null = null
+  // get sub(): Sub | null { return this._sub }
 
   validateEventsSig: boolean
 
@@ -41,13 +41,13 @@ export class NostrReqRes {
   constructor({
     kind = 28080,
     maxBytesPerChunk = NostrReqRes.MAX_BYTES_PER_CHUNK,
-    secretKey = generatePrivateKey(),
+    secretKey = generateSecretKey(),
     validateEventsSig = false,
     waitForRealyAckWhenSendingChunks = false
   }: {
     kind?: number
     maxBytesPerChunk?: number
-    secretKey?: string
+    secretKey?: Uint8Array
     validateEventsSig?: boolean
     waitForRealyAckWhenSendingChunks?: boolean
   } = {}) {
@@ -60,51 +60,41 @@ export class NostrReqRes {
   }
 
   async disconnect(): Promise<void> {
-    if (this._relay && this._relay.status === 1) {
+    if (this._relay && this._relay.connected) {
       await this._relay.close()
     }
   }
 
   async connect(relayUrl: string): Promise<this> {
     await this.disconnect()
-    this._relay = relayInit(relayUrl)
-    
-    await new Promise((resolve, reject) => {
-      this._relay!.connect().catch(reject)
-      this._emitter.emit("connecting")
-      this._relay!.on("connect", () => {
-        this._emitter.emit("connect")
-        resolve(null)
-      })
-      this._relay!.on("error", () => {
-        const err = new ExtendedError({
-          message: "Failed to connect to relay",
-          code: "RELAY_CONNECTION_ERROR"
-        })
+    this._emitter.emit("connecting")
 
-        this._emitter.emit("error", err)
-        reject(err)
-      })
-      this._relay!.on("disconnect", () => {
-        this._emitter.emit("disconnect")
-      })
-    })
+    try {
+      this._relay = await Relay.connect(relayUrl)
 
-    const filters = [{
-      kinds: [this.kind],
-      "#p": [this._pubkey]
-    }]
+    } catch (err) {
+      const { message } = err as Error
+      const extErr = new ExtendedError({
+        message,
+        code: "RELAY_CONNECTION_ERROR"
+      })
+
+      this._emitter.emit("error", extErr) 
+      throw extErr
+    }
+
+    this._emitter.emit("connect")
+    this._relay.onclose = () => this._emitter.emit("disconnect")
     
-    this._sub = this._relay.sub(filters)
-   
-    this._sub.on("event", async(event: Event) => {
+    // this._sub = this._relay.sub(filters)
+    const onevent = async(event: Event) => {
       try {
         const chunk: FirstChunk | Chunk = JSON.parse(await nip04.decrypt(this._secretKey, event.pubkey, event.content))
 
         validateEnvelope(chunk)
 
         if (this.validateEventsSig) {
-          chunk.validSig = await verifySignature(event)
+          chunk.validSig = await verifyEvent(event)
         } else {
           chunk.validSig = null
         }
@@ -155,6 +145,13 @@ export class NostrReqRes {
           }))
         }
       }
+    }
+
+    this._relay.subscribe([{
+      kinds: [this.kind],
+      "#p": [this._pubkey]
+    }], {
+      onevent
     })
 
     return this

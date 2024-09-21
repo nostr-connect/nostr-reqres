@@ -49,7 +49,7 @@ export class ReqRes {
   protected _receiver?: string
   get receiver() { return this._receiver }
 
-  protected _secretKey?: string
+  protected _secretKey?: Uint8Array
   get secretKey() { return this._secretKey }
 
   protected _maxBytesPerChunk?: number
@@ -189,7 +189,6 @@ export class ReqRes {
       }
 
       for (const { event, chunk } of data) {
-        const pub = this._nostrReqRes.relay!.publish(event)
         const onChunkSent = () => {
           this._emitter.emit("chunk", chunk)
           sentChunks++
@@ -200,9 +199,9 @@ export class ReqRes {
         }
 
         if (this._nostrReqRes.waitForRealyAckWhenSendingChunks) {
-          pub.on("ok", onChunkSent)
-    
-          pub.on("failed", (reason: any) => {
+          this._nostrReqRes.relay!.publish(event)
+          .then(() => onChunkSent())
+          .catch((reason: any) => {
             this._error = new ExtendedError({
               message: "Failed to publish chunk",
               code: "PUBLISH_FAILED",
@@ -214,7 +213,8 @@ export class ReqRes {
             removeListeners()
             reject(this.error)
           })
-        } else { 
+        } else {
+          this._nostrReqRes.relay!.publish(event)
           onChunkSent()
         }
       }

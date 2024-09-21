@@ -1,7 +1,7 @@
-import type { Event, UnsignedEvent } from "nostr-tools"
+import type { Event, UnsignedEvent, VerifiedEvent } from "nostr-tools"
 import type { Chunk, FirstChunk } from "."
 import { ExtendedError } from "./ExtendedError"
-import { nip04, getEventHash, signEvent, validateEvent, verifySignature } from "nostr-tools"
+import { nip04, validateEvent, verifyEvent, finalizeEvent } from "nostr-tools"
 import { MAX_BYTES_PER_CHUNK, MIN_BYTES_PER_CHUNK } from "./constants"
 
 export const validateEnvelope = (envelope: FirstChunk | Chunk): boolean => {
@@ -98,7 +98,7 @@ export type PrepareEventParams = {
   envelope: Chunk
   kind: number
   pubkey: string
-  secretKey: string
+  secretKey: Uint8Array
 }
 
 export const prepareEvent = async({
@@ -117,12 +117,8 @@ export const prepareEvent = async({
     tags: [["p", receiver]],
     content: cipherText
   }
-
-  const event: Event = {
-    ...unsignedEvent,
-    id: getEventHash(unsignedEvent),
-    sig: signEvent(unsignedEvent, secretKey)
-  }
+  
+  const event: VerifiedEvent = finalizeEvent(unsignedEvent, secretKey)
 
   const ok = validateEvent(event)
   if (!ok) {
@@ -133,7 +129,7 @@ export const prepareEvent = async({
     })
   }
 
-  const veryOk = verifySignature(event)
+  const veryOk = verifyEvent(event)
   if (!veryOk) {
     throw new ExtendedError({
       message: "Event signature is not valid",
@@ -161,7 +157,7 @@ export const prepareEventChunks = async({
   ttl: number
   data: string,
   kind: number,
-  secretKey: string,
+  secretKey: Uint8Array,
   maxBytesPerChunk: number
 }): Promise<{ chunk: FirstChunk | Chunk, event: Event }[]> => {
   validateMaxBytesPerChunk(maxBytesPerChunk)

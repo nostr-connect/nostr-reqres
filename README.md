@@ -12,7 +12,7 @@ npm install @nostr-connect/nostr-reqres
 
 ``` ts
 // Import the NostrReqRes module
-import { NostrReqRes } from "nostr-reqres"
+import { NostrReqRes } from "@nostr-connect/nostr-reqres"
 
 // Define an immediately invoked async function expression (IIFE)
 void (async () => {
@@ -55,7 +55,7 @@ void (async () => {
 
 ``` ts
 // Import the NostrReqRes library
-import { NostrReqRes } from "nostr-reqres";
+import { NostrReqRes } from "@nostr-connect/nostr-reqres";
 
 // Create an immediately invoked async function expression
 void (async () => {
@@ -126,7 +126,7 @@ example:
 
 ``` ts
 
-import { NostrReqRes } from "nostr-reqres";
+import { NostrReqRes } from "@nostr-connect/nostr-reqres";
 
 const nostrReqRes = new NostrReqRes({
   kind: 28080,

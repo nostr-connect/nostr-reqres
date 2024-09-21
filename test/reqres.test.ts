@@ -1,24 +1,36 @@
-import "@inrupt/jest-jsdom-polyfills"
+import { TextDecoder, TextEncoder } from "util"
 import crypto from "crypto"
-import { NostrReqRes } from "../src/index"
-import { generatePrivateKey } from "nostr-tools"
 
-Object.defineProperty(global, "crypto", {
+// Polyfills
+Object.defineProperty(global, "window", {
   value: {
-    getRandomValues: (arr:any) => crypto.randomBytes(arr.length),
+    MessageChannel: require("worker_threads").MessageChannel
+  }
+})
+Object.defineProperty(globalThis, "crypto", {
+  writable: true,
+  value: {
+    getRandomValues: (arr : any) => crypto.randomBytes(arr.length),
     subtle: crypto.webcrypto.subtle,
   }
 })
+Object.defineProperty(global, "TextDecoder", { value: TextDecoder })
+Object.defineProperty(global, "TextEncoder", { value: TextEncoder })
+Object.defineProperty(globalThis, "WebSocket", { value: require("ws") })
 
-// const relayUrl = "wss://nostr.vulpem.com"
+import { NostrReqRes } from "../src/index"
+import { generateSecretKey } from "nostr-tools"
+import { ExtendedError } from "../src/ExtendedError"
+
+const relayUrl = "wss://nostr.vulpem.com"
 // const relayUrl = "ws://localhost:7001"
 // const relayUrl = "wss://relay.damus.io"
-const relayUrl = "wss://nostr-pub.wellorder.net"
+// const relayUrl = "wss://nostr-pub.wellorder.net"
 
 const getClients = async (): Promise<{ sender: NostrReqRes, receiver: NostrReqRes }> => {
-  const senderSk = generatePrivateKey()
-  const receiverSk = generatePrivateKey()
-  const nostrReqResSENDER = await new NostrReqRes({ secretKey: senderSk, waitForRealyAckWhenSendingChunks: false }).connect(relayUrl)
+  const senderSk = generateSecretKey()
+  const receiverSk = generateSecretKey()
+  const nostrReqResSENDER = await new NostrReqRes({ secretKey: senderSk, waitForRealyAckWhenSendingChunks: true }).connect(relayUrl)
   nostrReqResSENDER.onError(err => { throw err })
   const nostrReqResRECEIVER = await new NostrReqRes({ secretKey: receiverSk, }).connect(relayUrl)
   nostrReqResRECEIVER.onError(err => { throw err })
@@ -36,7 +48,7 @@ describe("req-res tests", () => {
     const clients = await getClients()
 
     let receivedChunks = 0
-    clients.receiver.onReq(async req => {
+    clients.receiver.onReq(req => {
       req.onChunk(chunk => {
         console.log("chunk received", chunk)
         receivedChunks++
@@ -79,10 +91,9 @@ describe("req-res tests", () => {
     expect(res.data).toBe("Pong")    
   })
 
-  it("req-res timeout", async(ok) => {
+  it("req-res timeout", async() => {
     jest.setTimeout(6000)
     const clients = await getClients()
-
 
     clients.receiver.onReqReceived(async req => {
       await wait(1000)
@@ -90,8 +101,12 @@ describe("req-res tests", () => {
         req.createRes({ data: "Pong" })
         throw new Error("Should have thrown")
       } catch (err) {
-        expect(err.code).toBe("TIMED_OUT")
-        ok()
+        const { code } = err as ExtendedError
+        if (code) {
+          expect(code).toBe("TIMED_OUT")
+        } else {
+          throw err
+        }
       }
     })
 
@@ -109,8 +124,12 @@ describe("req-res tests", () => {
       await req.send()
       throw new Error("Should have thrown")
     } catch (err) {
-      expect(err.code).toBe("TIMED_OUT")
-      ok()
+      const { code } = err as ExtendedError
+      if (code) {
+        expect(code).toBe("TIMED_OUT")
+      } else {
+        throw err
+      }
     }
   })
 })
