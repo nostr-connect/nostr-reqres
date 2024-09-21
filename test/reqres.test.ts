@@ -1,7 +1,5 @@
-import "@inrupt/jest-jsdom-polyfills"
+import { TextDecoder, TextEncoder } from "util"
 import crypto from "crypto"
-import { NostrReqRes } from "../src/index"
-import { generatePrivateKey } from "nostr-tools"
 
 Object.defineProperty(global, "crypto", {
   value: {
@@ -9,6 +7,18 @@ Object.defineProperty(global, "crypto", {
     subtle: crypto.webcrypto.subtle,
   }
 })
+Object.defineProperty(global, "TextDecoder", {
+  value: TextDecoder
+})
+
+Object.defineProperty(global, "TextEncoder", {
+  value: TextEncoder
+})
+
+import { NostrReqRes } from "../src/index"
+import { generatePrivateKey } from "nostr-tools"
+import { ExtendedError } from "../src/ExtendedError"
+
 
 // const relayUrl = "wss://nostr.vulpem.com"
 // const relayUrl = "ws://localhost:7001"
@@ -90,8 +100,13 @@ describe("req-res tests", () => {
         req.createRes({ data: "Pong" })
         throw new Error("Should have thrown")
       } catch (err) {
-        expect(err.code).toBe("TIMED_OUT")
-        ok()
+        const { code } = err as ExtendedError
+        if (code) {
+          expect(code).toBe("TIMED_OUT")
+          ok()
+        } else {
+          throw err
+        }
       }
     })
 
@@ -109,8 +124,13 @@ describe("req-res tests", () => {
       await req.send()
       throw new Error("Should have thrown")
     } catch (err) {
-      expect(err.code).toBe("TIMED_OUT")
-      ok()
+      const { code } = err as ExtendedError
+      if (code) {
+        expect(code).toBe("TIMED_OUT")
+        ok()
+      } else {
+        throw err
+      }
     }
   })
 })

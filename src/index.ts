@@ -1,7 +1,7 @@
-if (typeof window === "undefined") { 
-  globalThis.crypto = require("crypto")
-  require("websocket-polyfill")
-}
+// if (typeof window === "undefined") { 
+  // globalThis.crypto = require("crypto")
+  // require("ws")
+// }
 
 import type { Req } from "./Req"
 import type { NostrReqRes } from "./NostrReqRes"
